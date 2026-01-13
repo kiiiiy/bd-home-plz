@@ -61,7 +61,9 @@ export FLY_APP="bd-homepage-<위와 동일>"
 GitHub Actions 탭에서 모두 초록 표시(✅) 인지 확인
 
 ⚠️ 만일 fly-backend.yml은 초록 표시 뜨는데 pages-frontend.yml만 에러 날 경우 pages 설정 문제!
+
 settings -> pages -> Build and deployment -> Source를 Github Actions로 변경 
+
 이 경우 90% 문제 해결됨
 
 
