@@ -57,8 +57,6 @@ echo "==> Setup backend & frontend inside this repo"
 ./scripts/bootstrap_backend.sh
 ./scripts/bootstrap_frontend.sh
 
-echo
-echo "==> Fly app bootstrap & GitHub secret setup"
 
 APP_NAME="bd-homepage-${OWNER}"
 if [ -d "${ROOT_DIR}/backend" ]; then
@@ -85,17 +83,9 @@ else
 fi
 
 # GitHub Actions에서 fly deploy 하도록 토큰을 repo secret으로 주입
-FLY_API_TOKEN="$(fly auth token)"
 cd "$ROOT_DIR"
-echo "==> Fly app: $APP_NAME"
 
 
-echo
-echo "==> Push generated contents"
-for i in 1 2 3; do
-  gh secret set FLY_API_TOKEN -b"$FLY_API_TOKEN" -R "${OWNER}/${OPS_REPO}" && break
-  sleep 2
-done
 
 git add -A
 git commit -m "chore: generate backend/frontend & workflows" || true
@@ -109,4 +99,4 @@ echo
 echo "Check:"
 echo "  GitHub repo: https://github.com/${OWNER}/${OPS_REPO}"
 echo "  (After first backend deploy) Fly URL: https://bd-homepage-${OWNER}.fly.dev/api/health"
-echo "  Pages URL: https://${OWNER}.github.io/${OPS_REPO}/"
+echo "  (After first backend deploy) Fly URL: https://${APP_NAME}.fly.dev/api/health"
