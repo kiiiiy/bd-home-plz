@@ -21,9 +21,9 @@ fi
 
 if ! need fly; then
   curl -L https://fly.io/install.sh | sh
-  export FLYCTL_INSTALL="$HOME/.fly"
-  export PATH="$FLYCTL_INSTALL/bin:$PATH"
 fi
+export PATH="$HOME/.fly/bin:$PATH"
+
 
 # 1) auth
 echo "==> Auth check (1-time browser login if needed)"
@@ -57,9 +57,46 @@ echo "==> Setup backend & frontend inside this repo"
 ./scripts/bootstrap_backend.sh
 ./scripts/bootstrap_frontend.sh
 
+echo
+echo "==> Fly app bootstrap & GitHub secret setup"
+
+APP_NAME="bd-homepage-${OWNER}"
+if [ -d "${ROOT_DIR}/backend" ]; then
+  BACKEND_DIR="${ROOT_DIR}/backend"
+elif [ -d "${ROOT_DIR}/bd-home-template/backend" ]; then
+  BACKEND_DIR="${ROOT_DIR}/bd-home-template/backend"
+else
+  echo "!! backend directory not found"
+  exit 1
+fi
+
+cd "$BACKEND_DIR"
+
+fly status -a "$APP_NAME" >/dev/null 2>&1 || fly apps create "$APP_NAME" --org personal >/dev/null
+
+if [ ! -f fly.toml ]; then
+  fly launch --name "$APP_NAME" --region nrt --no-deploy --dockerfile Dockerfile
+fi
+
+if grep -q '^app = ' fly.toml; then
+  sed -i "s/^app = \".*\"/app = \"${APP_NAME}\"/" fly.toml
+else
+  printf 'app = "%s"\n%s' "$APP_NAME" "$(cat fly.toml)" > fly.toml
+fi
+
+# GitHub Actions에서 fly deploy 하도록 토큰을 repo secret으로 주입
+FLY_API_TOKEN="$(fly auth token)"
+cd "$ROOT_DIR"
+echo "==> Fly app: $APP_NAME"
+
 
 echo
 echo "==> Push generated contents"
+for i in 1 2 3; do
+  gh secret set FLY_API_TOKEN -b"$FLY_API_TOKEN" -R "${OWNER}/${OPS_REPO}" && break
+  sleep 2
+done
+
 git add -A
 git commit -m "chore: generate backend/frontend & workflows" || true
 git push
